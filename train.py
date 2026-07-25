@@ -16,6 +16,10 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 (If your cluster does not have Infiniband interconnect prepend NCCL_IB_DISABLE=1)
 """
 
+# Initial training command  using cpu 
+# python train.py --dataset=shakespeare_char --device=cpu --compile=False --eval_iters=10 --block_size=64 --batch_size=12 --n_layer=4 --n_head=4 --n_embd=128 --max_iters=50
+
+
 import os
 import time
 import math
