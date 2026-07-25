@@ -263,6 +263,10 @@ t0 = time.time()
 local_iter_num = 0 # number of iterations in the lifetime of this process
 raw_model = model.module if ddp else model # unwrap DDP container if needed
 running_mfu = -1.0
+
+start_time = time.time()
+dt = 0.0
+
 while True:
 
     # determine and set the learning rate for this iteration
@@ -276,7 +280,12 @@ while True:
         # print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
         train_ppl = math.exp(losses['train'])
         val_ppl = math.exp(losses['val'])
-        print(f"step {iter_num}: train loss {losses['train']:.4f} (ppl: {train_ppl:.2f}), val loss {losses['val']:.4f} (ppl: {val_ppl:.2f})")
+
+        # ⏱️ Calculate total elapsed time so far
+        elapsed_sec = time.time() - start_time
+
+        print(f"step {iter_num}: train loss {losses['train']:.4f} (ppl: {train_ppl:.2f}), val loss {losses['val']:.4f} (ppl: {val_ppl:.2f}) step time: {dt*1000:.1f}ms  total elapsed: {elapsed_sec:.2f}s")
+
         if wandb_log:
             wandb.log({
                 "iter": iter_num,
@@ -340,13 +349,21 @@ while True:
             running_mfu = mfu if running_mfu == -1.0 else 0.9*running_mfu + 0.1*mfu
         # print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
         ppl = math.exp(lossf)
-        print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+        # print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
+        print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, total elapsed {time.time()-start_time:.2f}s, mfu {running_mfu*100:.2f}%")
     iter_num += 1
     local_iter_num += 1
 
     # termination conditions
     if iter_num > max_iters:
         break
+
+# ⏱️ Print final summary right here!
+if master_process:
+    total_time = time.time() - start_time
+    minutes = int(total_time // 60)
+    seconds = int(total_time % 60)
+    print(f"\n🎉 Training complete in {minutes}m {seconds}s! ({total_time:.2f} seconds total)")
 
 if ddp:
     destroy_process_group()
