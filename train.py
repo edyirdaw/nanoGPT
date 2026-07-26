@@ -264,6 +264,18 @@ local_iter_num = 0 # number of iterations in the lifetime of this process
 raw_model = model.module if ddp else model # unwrap DDP container if needed
 running_mfu = -1.0
 
+
+def format_time(seconds):
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds % 60
+    if h > 0:
+        return f"{h}h {m:02d}m {int(s):02d}s"
+    elif m > 0:
+        return f"{m}m {int(s):02d}s"
+    else:
+        return f"{s:.2f}s"
+
 start_time = time.time()
 dt = 0.0
 
@@ -284,7 +296,8 @@ while True:
         # ⏱️ Calculate total elapsed time so far
         elapsed_sec = time.time() - start_time
 
-        print(f"step {iter_num}: train loss {losses['train']:.4f} (ppl: {train_ppl:.2f}), val loss {losses['val']:.4f} (ppl: {val_ppl:.2f}) step time: {dt*1000:.1f}ms  total elapsed: {elapsed_sec:.2f}s")
+        #print(f"step {iter_num}: train loss {losses['train']:.4f} (ppl: {train_ppl:.2f}), val loss {losses['val']:.4f} (ppl: {val_ppl:.2f}) step time: {dt*1000:.1f}ms  total elapsed: {elapsed_sec:.2f}s")
+        print(f"step {iter_num}: train loss {losses['train']:.4f} (ppl: {train_ppl:.2f}), val loss {losses['val']:.4f} (ppl: {val_ppl:.2f}) step time: {dt*1000:.1f}ms  total elapsed: {format_time(elapsed_sec)}")
 
         if wandb_log:
             wandb.log({
@@ -350,7 +363,8 @@ while True:
         # print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
         ppl = math.exp(lossf)
         # print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
-        print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, total elapsed {time.time()-start_time:.2f}s, mfu {running_mfu*100:.2f}%")
+        # print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, total elapsed {time.time()-start_time:.2f}s, mfu {running_mfu*100:.2f}%")
+        print(f"iter {iter_num}: loss {lossf:.4f} (ppl: {ppl:.2f}), time {dt*1000:.2f}ms, total elapsed {format_time(time.time()-start_time)}, mfu {running_mfu*100:.2f}%")
     iter_num += 1
     local_iter_num += 1
 
@@ -361,9 +375,10 @@ while True:
 # ⏱️ Print final summary right here!
 if master_process:
     total_time = time.time() - start_time
-    minutes = int(total_time // 60)
-    seconds = int(total_time % 60)
-    print(f"\n🎉 Training complete in {minutes}m {seconds}s! ({total_time:.2f} seconds total)")
+    # minutes = int(total_time // 60)
+    # seconds = int(total_time % 60)
+    # print(f"\n🎉 Training complete in {minutes}m {seconds}s! ({total_time:.2f} seconds total)")
+    print(f"\n🎉 Training complete in {format_time(total_time)}! ({total_time:.2f} seconds total)")
 
 if ddp:
     destroy_process_group()
