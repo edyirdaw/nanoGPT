@@ -113,7 +113,11 @@ class Block(nn.Module):
         causal_avg = torch.cumsum(x_attn, dim=1) / positions
                 
         # 3. MLP processes the averaged state, and residual highway adopts causal_avg
-        x = causal_avg 
+        # x = causal_avg 
+        # What it should have been (averaged WITHOUT clean residual):
+        x = causal_avg + self.mlp(self.ln_2(causal_avg))
+
+        x = x_attn + self.mlp(self.ln_2(causal_avg))
         
         return x
 
