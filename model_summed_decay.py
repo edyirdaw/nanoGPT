@@ -131,7 +131,8 @@ class Block(nn.Module):
         causal_decayed = torch.matmul(norm_weights, x_attn)
         
         # 5. MLP processes the decayed representation
-        x = causal_decayed + self.mlp(self.ln_2(causal_decayed))
+        # x = causal_decayed + self.mlp(self.ln_2(causal_decayed))
+        x = x_attn + self.mlp(self.ln_2(causal_decayed))
         
         return x
 
