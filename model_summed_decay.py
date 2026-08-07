@@ -118,10 +118,14 @@ class Block(nn.Module):
         steps = torch.arange(T, device=x_attn.device, dtype=x_attn.dtype)
         
         # diffs[t, i] = t - i
-        diffs = steps.unsqueeze(1) - steps.unsqueeze(0)
-        causal_mask = diffs >= 0
+        # diffs = steps.unsqueeze(1) - steps.unsqueeze(0)
+        raw_diffs = steps.unsqueeze(1) - steps.unsqueeze(0)
+        diffs = raw_diffs.clamp(min=0.0)  # Prevents gamma ** negative in upper triangle
+        # causal_mask = diffs >= 0
+        causal_mask = raw_diffs >= 0
         
         # Compute gamma^(t-i) safely without negative exponents
+        # decay_weights = torch.where(causal_mask, gamma ** diffs, 0.0)
         decay_weights = torch.where(causal_mask, gamma ** diffs, 0.0)
         
         # Normalize rows so historical weights sum to 1.0
