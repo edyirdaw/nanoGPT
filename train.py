@@ -43,6 +43,7 @@ eval_iters = 200
 eval_only = False # if True, script exits right after the first eval
 always_save_checkpoint = True # if True, always save a checkpoint after each eval
 init_from = 'scratch' # 'scratch' or 'resume' or 'gpt2*'
+seed = -1  # -1 acts as the sentinel for dynamic randomness
 # wandb logging
 wandb_log = False # disabled by default
 wandb_project = 'owt'
@@ -107,7 +108,21 @@ print(f"tokens per iteration will be: {tokens_per_iter:,}")
 
 if master_process:
     os.makedirs(out_dir, exist_ok=True)
-torch.manual_seed(1337 + seed_offset)
+# torch.manual_seed(1337 + seed_offset)
+# --- REPLACEMENT FOR CUSTOM SEEDING ---
+if seed == -1:
+    seed = torch.seed()
+
+run_seed = seed + seed_offset  # Preserves rank offset for multi-GPU training
+
+torch.manual_seed(run_seed)
+torch.cuda.manual_seed_all(run_seed)
+import numpy as np; np.random.seed(run_seed % (2**32 - 1))
+import random; random.seed(run_seed)
+
+if master_process:
+    config['seed'] = seed
+    print(f"Initialized run with base seed: {seed} (Rank offset applied: +{seed_offset})")
 torch.backends.cuda.matmul.allow_tf32 = True # allow tf32 on matmul
 torch.backends.cudnn.allow_tf32 = True # allow tf32 on cudnn
 device_type = 'cuda' if 'cuda' in device else 'cpu' # for later use in torch.autocast
