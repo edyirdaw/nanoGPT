@@ -10,4 +10,7 @@ __pycache__/
 input.txt
 env/
 venv/
-data/paul_graham/
+data/paul_graham/*.txt
+data/paul_graham/*.bin
+data/paul_graham/*.pkl
+
